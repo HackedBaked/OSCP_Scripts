@@ -112,10 +112,10 @@ ldapgather will pull a bunch of ldap information from a system using ldapsearch.
 The purpose of this script was mainly to gather user account "comments" to see if passwords were in there.
 However I expanded it to do much more. Forgive how verbose the code is, I just didn't have time to clean it up.
 Use this tool in the following way.
-    - To log into a ldap server with no credentials and run ldapgatherer
-        > ldapgatherer -u '' -p '' -s 10.10.10.161 -d htb.local"
-        or
-        > ldapgatherer -s 10.10.10.161 -d htb.local"
-    - If you want to use creds:
-        > ldapgatherer -u 'domain\username' -p 'MyCoolPassword' -s 10.10.10.161 -d htb.local"
+- To log into a ldap server with no credentials and run ldapgatherer
+    > ldapgatherer -u '' -p '' -s 10.10.10.161 -d htb.local"
+    or
+    > ldapgatherer -s 10.10.10.161 -d htb.local"
+- If you want to use creds:
+    > ldapgatherer -u 'domain\username' -p 'MyCoolPassword' -s 10.10.10.161 -d htb.local"
     
