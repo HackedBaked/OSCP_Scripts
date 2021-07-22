@@ -1,0 +1,50 @@
+#!/bin/bash
+
+#1) for the page to inspect perform "view-source"
+#2) copy all to "enum.html"
+#3) run tool against file
+
+# Exampl1: (filter) $ ./pulllinks.sh ./html-source.html
+# Exampl2: (nofilter) $ ./pulllinks.sh ./html-source.html nofilter
+
+
+if [[ $2 == "nofilter" ]];then
+    echo "[+] href references:"
+    cat $1 | grep 'href' | tr -d ' '
+
+    echo
+    echo "[+] src references:"
+    cat $1 | grep 'src' | tr -d ' '
+
+    echo
+    echo "[+] onclick references:"
+    cat $1 | grep 'onclick' | tr -d ' '
+
+    echo
+    echo "[+] path references:"
+    cat $1 | grep 'path' | tr -d ' '
+
+    echo
+    echo "[+] comments:"
+    cat $1 | grep '<!--' | tr -d ' '
+
+else
+    echo "[+] href references:"
+    cat $1 | grep 'href' | tr -d ' ' | awk -F 'href=' '{print$2}' | awk -F '"' '{print$2}'
+
+    echo
+    echo "[+] src references:"
+    cat $1 | grep 'src' | tr -d ' ' | awk -F '"/' '{print$2}' | awk -F '"' '{print$1}'
+
+    echo
+    echo "[+] onclick references:"
+    cat $1 | grep 'onclick' | tr -d ' '
+
+    echo
+    echo "[+] path references:"
+    cat $1 | grep 'path' | tr -d ' '
+
+    echo
+    echo "[+] comments:"
+    cat $1 | grep '<!--' | tr -d ' '
+fi

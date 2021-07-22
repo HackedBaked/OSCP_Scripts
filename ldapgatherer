@@ -1,0 +1,312 @@
+#!/bin/bash
+# This script will gather a variety of user information from a domain
+#
+# Requires:
+# - ldapsearch
+# - valid user / password (will test for null user by default)
+# 
+
+# Version
+version(){
+    echo "ldapgrabber version 1.2.0"
+    echo "Creation Date: 04/10/2020"
+    exit 1
+}
+
+# Help
+help_app(){
+    echo ""
+    echo "-----------      ------------           ----"
+    echo "Param Flag:      Description:           Use:"
+    echo "-----------      ------------           ----"
+    echo "-h               This help page         -h"
+    echo "-v               Version                -v"
+    echo "-u               Domain user            -u '{domain\user}'"
+    echo "-p               Domain user password   -p '{password}'"
+    echo "-s               Domain Server IP       -s {server IP}"
+    echo "-d               Domain                 -s {domain}"
+    echo ""
+    echo "Examples:"
+    echo "- No creds (null user):"
+    echo "   > ldapgatherer -u '' -p '' -s 10.10.10.161 -d htb.local"
+    echo "   > ldapgatherer -s 10.10.10.161 -d htb.local"
+    echo "- With creds:"
+    echo "   > ldapgatherer -u 'domain\\username' -p 'MyCoolPassword' -s 10.10.10.161 -d htb.local"
+    echo ""
+    exit 1
+    
+}
+
+# Gather user intput
+while getopts "u:p:s:d:hv" o; do
+    case "${o}" in
+        h)
+            help_app
+            ;;
+        v)
+            version
+            ;;
+        u)
+            domain_user="${OPTARG}"
+            ;;
+        p)
+            password=${OPTARG}
+            ;;
+        s)
+            server=${OPTARG}
+            ;;
+        d)
+            domain=${OPTARG}
+            ;;
+    esac
+done
+shift $((OPTIND-1))
+
+# Global vars
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m'
+## Create conical name out of provided domain
+conical=$(echo $domain | sed 's/\./,DC\=/g' | sed 's/^/DC\=/')
+filename="./lg-dump.out"
+
+
+
+# Check domain controller parameter was provided
+if [ -z "${server}" ] || [ -z "${domain}" ]; then
+    echo -e "${RED}[!] ERROR:${NC}"
+    echo "The following parameter is required."
+    echo "-s {domain server ip}"
+    echo "-d {domain}"
+    echo ""
+    echo "NOTE: if -u and -p are not included a null request will try to be sent."
+    echo ""
+    exit 1
+fi
+
+# Check if username and password provided
+if [ -z "${domain_user}" ] || [ -z "${password}" ]; then
+    echo -e "${GREEN}[+] ${NC}Username or password parameter not provided. Will try to send null request." 
+    use_null=1
+else
+    # Check if username is correct format
+    if ! [[ "${domain_user}" =~ [a-zA-Z0-9]{1,15}\\[a-zA-Z0-9._-]{1,64} ]]; then
+        echo -e "${RED}[!] ERROR:${NC}"
+        echo "\""${domain_user}"\" is not a valid user logon name format."
+        exit 1
+    fi
+fi
+
+# Check domain name
+if [[ $domain =~ ^@(([a-zA-Z](-?[a-zA-Z0-9])*)\.)+[a-zA-Z]{2,}$ ]]; then
+    echo -e "${RED}[!] ERROR:${NC}"
+    echo "\""${domain}"\" is not a valid domain"
+    exit 1
+fi
+
+
+# review
+review_params(){
+
+    if [[ $use_null -eq 1 ]]; then
+        echo 
+        echo "==============REVIEW=============="
+        echo "Domain Controller:   $server"
+        echo "Domain:              $domain"
+        echo "Domain User:         *NULL*"
+        echo "=================================="
+        echo 
+    else
+        echo 
+        echo "==============REVIEW=============="
+        echo "Domain Controller:   $server"
+        echo "Domain:              $domain"
+        echo "Domain User:         $domain_user"
+        echo "=================================="
+        echo 
+    fi
+}
+
+# ldapsearch check
+ldapsearch_check(){
+    echo -e "${GREEN}[+] ${NC}Checking if ldapsearch is installed"
+    if ! command -v ldapsearch &> /dev/null; then
+        echo -e "${RED}[!] ERROR:${NC}"
+        echo "ldapsearch is not installed :("
+        echo "Please install ldapsearch and try again"
+        exit 1
+    else
+        echo -e "${GREEN}[+] ${NC}ldapsearch is installed :) good to go!"
+    fi
+}
+
+# clean up
+remove_old_file(){
+    if [ -e $filename ]; then 
+        echo -e "${GREEN}[+] ${NC} Removing old output file $filename"
+        rm -f $filename
+    fi
+}
+
+# Gather ldap domain data
+ldapsearch_gather(){
+    echo -e "${GREEN}[+] ${NC} Performing ldapsearchs, output sent to '$filename' standby."
+    if [ $use_null -eq 1 ]; then
+        # Dump hole database (WARNING: very large! output to file)
+        #ldapsearch -x -h 10.10.10.161 -D '' -w '' -b "DC=htb,DC=local" > $filename
+
+        # Dump users
+        touch $filename
+        echo "==================" | tee -a $filename
+        echo "== ldapgatherer ==" | tee -a $filename
+        echo "==  Users/Group ==" | tee -a $filename
+        echo "== General Info ==" | tee -a $filename
+        echo "==================" | tee -a $filename
+        echo "Command: ldapsearch -x -h $server -D '' -w '' -b \"CN=Users,$conical\" | grep \"sAMAccountName\|name\|primaryGroup\|description\|objectClass\" | sed 's/name/\n&/g'" | tee -a $filename
+        echo "" | tee -a $filename
+        ldapsearch -x -h $server -D '' -w '' -b "CN=Users,$conical" | grep "sAMAccountName\|name\|primaryGroup\|description\|objectClass" | sed 's/name/\n&/g' | tee -a $filename
+        #ldapsearch -x -h $server -D '' -w '' -b "CN=Users,$conical" | grep "sAMAccountName\|name\|primaryGroup" | sed 's/name/\n&/g'
+        #ldapsearch -x -h $server -D '' -w '' -b "CN=Users,$conical" | tee -a $filename 
+        #ldapsearch -x -h 10.10.10.161 -D '' -w '' -b "CN=Users,$conical" >> $filename 
+        echo "" | tee -a $filename
+
+        # Dump computer
+        echo "==================" | tee -a $filename
+        echo "== ldapgatherer ==" | tee -a $filename
+        echo "==== Computers ===" | tee -a $filename
+        echo "==================" | tee -a $filename
+        echo "Command: ldapsearch -x -h $server -D '' -w '' -b \"CN=Computers,$conical\"" | tee -a $filename
+        echo "" | tee -a $filename
+        ldapsearch -x -h $server -D '' -w '' -b "CN=Computers,$conical"  | tee -a $filename
+        #ldapsearch -x -h 10.10.10.161 -D '' -w '' -b "CN=Computers,$conical"  >> $filename
+        echo "" | tee -a $filename
+
+        # Dump Domain Admins
+        echo "======================" | tee -a $filename
+        echo "==== ldapgatherer ====" | tee -a $filename
+        echo "==== Domain Admins ===" | tee -a $filename
+        echo "======================" | tee -a $filename
+        echo "Command: ldapsearch -x -h $server -D '' -w '' -b \"CN=Domain Admins,CN=Users,$conical\"" | tee -a $filename
+        echo "" | tee -a $filename
+        ldapsearch -x -h $server -D '' -w '' -b "CN=Domain Admins,CN=Users,$conical" | tee -a $filename
+        #ldapsearch -x -h 10.10.10.161 -D '' -w '' -b "CN=Domain Admins,CN=Users,$conical"  >> $filename
+        echo "" | tee -a $filename
+
+        # Dump Enterprise Admins
+        echo "==========================" | tee -a $filename
+        echo "====== ldapgatherer ======" | tee -a $filename
+        echo "==== Enterprise Admins ===" | tee -a $filename
+        echo "==========================" | tee -a $filename
+        echo "Command: ldapsearch -x -h $server -D '' -w '' -b \"CN=Enterprise Admins,CN=Users,$conical\"" | tee -a $filename
+        echo "" | tee -a $filename
+        ldapsearch -x -h $server -D '' -w '' -b "CN=Enterprise Admins,CN=Users,$conical"  | tee -a $filename
+        #ldapsearch -x -h 10.10.10.161 -D '' -w '' -b "CN=Enterprise Admins,CN=Users,$conical"  >> $filename
+        echo "" | tee -a $filename
+
+        # Dump Administrators
+        echo "============================" | tee -a $filename
+        echo "====== ldapgatherer ========" | tee -a $filename
+        echo "=== Local Administrators ===" | tee -a $filename
+        echo "============================" | tee -a $filename
+        echo "Command: ldapsearch -x -h $server -D '' -w '' -b \"CN=Administrators,CN=Builtin,$conical\"" | tee -a $filename
+        echo "" | tee -a $filename
+        ldapsearch -x -h $server -D '' -w '' -b "CN=Administrators,CN=Builtin,$conical" | tee -a $filename
+        #ldapsearch -x -h 10.10.10.161 -D '' -w '' -b "CN=Administrators,CN=Builtin,$conical"  >> $filename
+        echo "" | tee -a $filename
+
+        # Dump Remote Desktop Group
+        echo "============================" | tee -a $filename
+        echo "====== ldapgatherer ========" | tee -a $filename
+        echo "=== Remote Desktop Users ===" | tee -a $filename
+        echo "============================" | tee -a $filename
+        echo "Command: ldapsearch -x -h $server -D '' -w '' -b \"CN=Remote Desktop Users,CN=Builtin,$conical\"" | tee -a $filename
+        echo "" | tee -a $filename
+        ldapsearch -x -h $server -D '' -w '' -b "CN=Remote Desktop Users,CN=Builtin,$conical"  | tee -a $filename
+        #ldapsearch -x -h 10.10.10.161 -D '' -w '' -b "CN=Remote Desktop Users,CN=Builtin,$conical"  >> $filename
+        echo "" | tee -a $filename
+    else
+        touch $filename
+        echo "==================" | tee -a $filename
+        echo "== ldapgatherer ==" | tee -a $filename
+        echo "====== Users =====" | tee -a $filename
+        echo "==================" | tee -a $filename
+        echo "Command: ldapsearch -x -h $server -D '$domain_user' -w '$password' -b \"CN=Users,$conical\"" | tee -a $filename
+        echo "" | tee -a $filename
+        ldapsearch -x -h $server -D '$domain_user' -w '$password' -b "CN=Users,$conical" | tee -a $filename 
+        #ldapsearch -x -h 10.10.10.161 -D '$domain_user' -w '$password' -b "CN=Users,$conical" >> $filename 
+        echo "" | tee -a $filename
+
+        # Dump computer
+        echo "==================" | tee -a $filename
+        echo "== ldapgatherer ==" | tee -a $filename
+        echo "==== Computers ===" | tee -a $filename
+        echo "==================" | tee -a $filename
+        echo "Command: ldapsearch -x -h $server -D '$domain_user' -w '$password'  -b \"CN=Computers,$conical\"" | tee -a $filename
+        echo "" | tee -a $filename
+        ldapsearch -x -h $server -D '$domain_user' -w '$password'  -b "CN=Computers,$conical"  | tee -a $filename
+        #ldapsearch -x -h 10.10.10.161 -D '$domain_user' -w '$password'  -b "CN=Computers,$conical"  >> $filename
+        echo "" | tee -a $filename
+
+        # Dump Domain Admins
+        echo "======================" | tee -a $filename
+        echo "==== ldapgatherer ====" | tee -a $filename
+        echo "==== Domain Admins ===" | tee -a $filename
+        echo "======================" | tee -a $filename
+        echo "Command: ldapsearch -x -h $server -D '$domain_user' -w '$password' -b \"CN=Domain Admins,CN=Users,$conical\"" | tee -a $filename
+        echo "" | tee -a $filename
+        ldapsearch -x -h $server -D '$domain_user' -w '$password' -b "CN=Domain Admins,CN=Users,$conical"  | tee -a $filename
+        #ldapsearch -x -h 10.10.10.161 -D '$domain_user' -w '$password' -b "CN=Domain Admins,CN=Users,$conical"  >> $filename
+        echo "" | tee -a $filename
+
+        # Dump Enterprise Admins
+        echo "==========================" | tee -a $filename
+        echo "====== ldapgatherer ======" | tee -a $filename
+        echo "==== Enterprise Admins ===" | tee -a $filename
+        echo "==========================" | tee -a $filename
+        echo "Command: ldapsearch -x -h $server -D '$domain_user' -w '$password' -b \"CN=Enterprise Admins,CN=Users,$conical\"" | tee -a $filename
+        echo "" | tee -a $filename
+        ldapsearch -x -h $server -D '$domain_user' -w '$password' -b "CN=Enterprise Admins,CN=Users,$conical"  | tee -a $filename
+        #ldapsearch -x -h 10.10.10.161 -D '$domain_user' -w '$password' -b "CN=Enterprise Admins,CN=Users,$conical"  >> $filename
+        echo "" | tee -a $filename
+
+        # Dump Administrators
+        echo "============================" | tee -a $filename
+        echo "====== ldapgatherer ========" | tee -a $filename
+        echo "=== Local Administrators ===" | tee -a $filename
+        echo "============================" | tee -a $filename
+        echo "Command: ldapsearch -x -h $server -D '$domain_user' -w '$password' -b \"CN=Administrators,CN=Builtin,$conical\"" | tee -a $filename
+        echo "" | tee -a $filename
+        ldapsearch -x -h $server -D '$domain_user' -w '$password' -b "CN=Administrators,CN=Builtin,$conical"  | tee -a $filename
+        #ldapsearch -x -h 10.10.10.161 -D '$domain_user' -w '$password' -b "CN=Administrators,CN=Builtin,$conical"  >> $filename
+        echo "" | tee -a $filename
+
+        # Dump Remote Desktop Group
+        echo "============================" | tee -a $filename
+        echo "====== ldapgatherer ========" | tee -a $filename
+        echo "=== Remote Desktop Users ===" | tee -a $filename
+        echo "============================" | tee -a $filename
+        echo "Command: ldapsearch -x -h $server -D '' -D '$domain_user' -w '$password' -b \"CN=Remote Desktop Users,CN=Builtin,$conical\"" | tee -a $filename
+        echo "" | tee -a $filename
+        ldapsearch -x -h $server -D '' -D '$domain_user' -w '$password' -b "CN=Remote Desktop Users,CN=Builtin,$conical"  | tee -a $filename
+        #ldapsearch -x -h 10.10.10.161 -D '' -D '$domain_user' -w '$password' -b "CN=Remote Desktop Users,CN=Builtin,$conical"  >> $filename
+        echo "" | tee -a $filename
+
+    fi
+    echo -e "${GREEN}[+] ${NC} Done."
+}
+
+# Main
+main(){
+    # Check if ldapsearch is installed
+    ldapsearch_check
+    # Check paraemter input and show review
+    review_params
+    # Remove old dump files
+    remove_old_file
+    # Perform ldap searches
+    ldapsearch_gather
+}
+
+
+# Main Entery Point
+main

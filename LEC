@@ -1,0 +1,71 @@
+#!/bin/bash
+# By: Dave Houser
+#Little Endian Converter (LEC.sh)
+#Use this script to convert a BigEndian 8bit address to little endian 
+
+#global vars:
+v=$1
+LEN=$(echo ${#v})
+
+help(){
+    echo help -h
+    echo version -v
+
+    echo Example: "\"./LEC.sh 23456789\" --> \x89\x67\x45\x23"
+}
+
+version(){
+    echo Little Endian Converter \(LEC\) 
+    echo Version 1.0.0.0
+}
+
+
+if [[ $1 == "" ]]; then                                                                                                                                                                                     
+        echo "No values given, please provide option"                                                                                                                                                           
+        help                                                                                                                                                                                                    
+    exit 1                                                                                                                                                                                                  
+fi      
+
+while getopts ":hv" opts; do
+    case "${opts}"
+    in
+        h)  # Help
+            help
+            exit 1
+            ;;
+
+        v)  # Version
+            version
+            exit 1
+            ;;
+
+        \?) # Invalid options
+            echo "Invalid Options: -$OPTARG"
+            help
+            exit 1
+            ;;
+    esac
+done
+
+if ! [[ $v =~ ^[0-9A-Fa-f]{1,}$ ]]; then
+    echo \"$v\" is not a hex value.
+    echo Please provide a 8 digit hex value \(32 bit\).
+    exit 1
+fi
+
+if [[ $LEN -gt 8 ]] || [[ $LEN -lt 8 ]]; then
+    echo \"$v\" is not 32bit.
+    echo Must be 8 hex characters.
+    exit 1
+fi
+
+echo
+echo - reverse:
+echo ${v:6:2}${v:4:2}${v:2:2}${v:0:2}
+echo
+echo - python output:
+echo eip = \"\\x${v:6:2}\\x${v:4:2}\\x${v:2:2}\\x${v:0:2}\"
+echo
+echo - c output:
+echo char eip[]=\"\\x${v:6:2}\\x${v:4:2}\\x${v:2:2}\\x${v:0:2}\"\;
+echo

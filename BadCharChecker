@@ -1,0 +1,92 @@
+#!/bin/bash
+# By: Dave Houser
+#
+# This tool can ONLY be used with output of the Immunity Debugger ESP hex dump
+# output.
+# 
+# To use:
+# 1) From Immunity Debugger, right click ESP register and select "Follow in dump"
+# 2) In dump output highlight all hex values to copy into a file. Make sure
+#    ONLY to select char values to check.
+#    Right click and select "Copy to clipboard"
+# 3) Copy output to a file on linux system
+# 4) Run "BadCharChecker filename"
+#
+
+# function for joining array
+function join_by { local d=$1; shift; echo -n "$1"; shift; printf "%s" "${@/#/$d}"; }
+
+if [ -z "$1" ]; then
+    echo "You must suppy a file name with Immunity Debugger ESP hex dump output"
+    echo "Example: \"BadCharChecker /path/to/charfile\""
+    exit 1
+fi
+
+
+#Input file with Immunity ESP dump output
+file=$1
+#List of all Chars
+chars="000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F202122232425262728292A2B2C2D2E2F303132333435363738393A3B3C3D3E3F404142434445464748494A4B4C4D4E4F505152535455565758595A5B5C5D5E5F606162636465666768696A6B6C6D6E6F707172737475767778797A7B7C7D7E7F808182838485868788898A8B8C8D8E8F909192939495969798999A9B9C9D9E9FA0A1A2A3A4A5A6A7A8A9AAABACADAEAFB0B1B2B3B4B5B6B7B8B9BABBBCBDBEBFC0C1C2C3C4C5C6C7C8C9CACBCCCDCECFD0D1D2D3D4D5D6D7D8D9DADBDCDDDEDFE0E1E2E3E4E5E6E7E8E9EAEBECEDEEEFF0F1F2F3F4F5F6F7F8F9FAFBFCFDFEFF"
+file_goodchars=$(cat $file | sed -e 's/^..........//' | sed -e 's/.//24g' | tr -d ' ' | tr -d '\n')
+#file_goodchars=$(cat $file | sed -e 's/^..........//' | sed -e 's/..........$//' | tr -d ' ' | tr -d '\n')
+#file_goodchars=$(cat $file | awk -F '  ' '{print $2}' | tr -d ' ' | tr -d '\n')
+
+#Count of chars and file chars
+chars_count=$(echo $chars | wc -c)
+file_count=$(echo $file_goodchars | wc -c)
+
+#Split chars into byte values (2 characters)
+chars_split=$(echo $chars | fold -w2)
+file_goodchars_split=$(echo $file_goodchars | fold -w2)
+iden_chars=$(echo $2 | fold -w2)
+
+#Put chars 1 byte at a time into an array
+chars_array=(`echo ${chars_split}`)
+file_goodchars_array=(`echo ${file_goodchars_split}`)
+iden_array=(`echo ${iden_chars}`)
+
+#Find missing chars in arrays
+diff_array=()
+for i in "${chars_array[@]}"; do
+    skip=
+    for j in "${file_goodchars_array[@]}"; do
+        [[ $i == $j ]] && { skip=1; break; }
+    done
+    [[ -n $skip ]] || diff_array+=("$i")
+done
+
+#Find missing chars from identified bad chars and diff_array
+diff_vs_iden_array=()
+for i in "${diff_array[@]}"; do
+    skip=
+    for j in "${iden_array[@]}"; do
+        [[ $i == $j ]] && { skip=1; break; }
+    done
+    [[ -n $skip ]] || diff_vs_iden_array+=("$i")
+done
+
+remove_string='\x'
+
+##### OUTPUT DISPLAY #####
+echo
+echo "Identified bad chars=\"$2\""
+if [ -z ${diff_vs_iden_array[@]/*$remove_string/} ]; then
+    echo "Chars missing from AllChars & Identifed bad chars= None! :)"
+else
+    echo "Chars missing from AllChars & Identifed bad chars=\"${diff_vs_iden_array[@]/*$remove_string/}\""
+fi
+
+echo "Chars missing from AllChars=\"\x$(join_by '\x' ${diff_array[@]})\""
+echo
+
+#Display a count of bytes
+echo "All Chars Length:      ${#chars_array[@]}"
+echo "\"$file\" Chars Length:   ${#file_goodchars_array[@]}"
+echo 
+echo "\"$file\" Chars:"
+echo ${file_goodchars_array[@]}
+echo 
+echo "All Chars (For reference only):"
+echo ${chars_array[@]}
+echo 
+

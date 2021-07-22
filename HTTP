@@ -1,0 +1,63 @@
+#!/bin/bash
+# Use this script to list all contents recursivly in the directory you are in as a URL path to download, then start a python2 HTTP server
+
+version(){
+    echo "HTTP auto runner v1.0.0"
+    exit 1
+}
+
+help_function(){
+echo "
+HTTP auto runner v1.0.0
+This script will do the following:
+- List all files recursivly in your directory as a URL path
+- start a python2 HTTP server based on the port you specify and IP
+!!!WARNING!!! DO NOT RUN THIS IN /, you will be sorry :(
+
+Examples:
+$ HTTP 10.10.10.10 8088
+- copy any line to download, then remote system to download from said URL
+$ HTTP 10.10.10.10
+- same as first example but port "80" will be used by default
+
+This script works great with tmux panel search mode:
+- $ HTTP 10.10.10.10 8088
+- {tmux bind} [
+- CTRL r
+- search for a name of the file {ENTER}
+- use "n" or "N" to march around available names
+"
+exit 1
+}
+
+#Version
+if [ "$1" == "-v" ] || [ "$1" == "--version" ]; then
+    version
+fi
+
+#Help 
+if [ -z "$1" ] || [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
+    help_function
+fi
+
+# create array of all recursive files in current dir
+array=($(find . -type f -not -path '*/\.*'| awk '{print substr($1,2);}'))
+echo "########"
+echo "Current files in this directory as URL paths:"
+for i in "${array[@]}"; do  
+    # if no port porvided echo path without port (default 80)
+    if [ -z "$2" ]; then
+        echo "http://$1$i"
+    else
+        echo "http://$1:$2$i"
+    fi
+done
+    if [ -z "$2" ]; then
+        echo "########"
+        sudo python -m SimpleHTTPServer 80
+    else
+        echo "########"
+        sudo python -m SimpleHTTPServer $2
+    fi
+
+echo

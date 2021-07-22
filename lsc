@@ -1,0 +1,26 @@
+#!/bin/bash
+
+BLUE='\033[0;36m'
+RED='\033[0;31m'
+NC='\033[0m'
+
+#cat all files in the current directory
+
+if [[ $# -eq 0 ]];then
+    #for i in ./*; do 
+    for i in $(find . -type f); do 
+        echo
+        printf "${BLUE}======= FILE: ${RED}$i ${BLUE}=======${NC}\n"
+        cat $i
+        echo
+    done
+else
+    for j in ./$1; do
+    #for j in $(find . -type f); do
+        echo 
+        printf "${BLUE}======= FILE: ${RED}$j ${BLUE}=======${NC}\n"
+        cat $j
+        echo
+    done
+fi
+
