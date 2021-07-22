@@ -30,6 +30,7 @@ use this tool in the following way:
 
 ## LEC (Little Endian Converter)
 Dependencies: none
+
 LEC is used for BOF attacks when using ImmunityDebugger on Windows exploits.
 Its purpose is to be used when you want to convert a registry address to Little endian format.
 I mainly used this after I ran `!mona find -s "\xff\xe4" -m "dependencyfoundname.exe"`. I would
@@ -43,6 +44,7 @@ Use this tool in the following way:
 
 ## HTTP
 Dependencies: python
+
 HTTP is just a wrapper over the python simpleHTTPServer. I created this because, I didn't like having to type out "python -m SimpleHTTPServer 1234" over and over again.
 Also I wanted something that would list all files recursively as URL paths, so I can copy them quickly.
 Use this tool in the following way:
@@ -61,6 +63,7 @@ This tool works great in combination with tmux search. Try the following after r
 
 ## webgrabber
 Dependencies: cutycapt, jq(for ffuf json files), firefox (by default this is the browser configured to open files)
+
 webgrabber is a wrapper around cutycapt. You MUST have cutycapt installed and in your path for webgrabber to work. 
 The purpose of webgrabber is to quickly iterate though a directory buster output file, go to each url's web interface,
 take a picture of what it looks like, append it to a HTML file, and open in firefox. The web page will include
@@ -92,6 +95,7 @@ Use this tool in the following way:
 
 ## pulllinks
 Dependencies: none
+
 pulllinks is a quick way to to filter out the HTML for a page to show all links and comments found on a page. 
 The purpose of this script was to copy the HTML source form a specific page, paste into a file (Example: index.html)
 then run pulllinks against it. This will show all the links for hrefs, src, onclick, and path references. 
@@ -109,6 +113,7 @@ Use this tool in the following way:
 
 ## ldapgatherer
 Dependences: ldapsearch
+
 ldapgather will pull a bunch of ldap information from a system using ldapsearch. 
 The purpose of this script was mainly to gather user account "comments" to see if passwords were in there.
 However I expanded it to do much more. Forgive how verbose the code is, I just didn't have time to clean it up.
