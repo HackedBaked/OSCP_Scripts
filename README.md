@@ -78,8 +78,11 @@ Use this tool in the following way:
 - Perform a web directory enumeration with gobuster, feroxbuster, or ffuf, make sure to create an output file with one of the above supported methods
 - run webgrabber, here are some examples.
     > webgrabber -s http://10.10.10.10 -f <gobusterfile> -e gb"
+
     > webgrabber -s https://10.10.10.10 -f <gobusterfile> -e gb"
+
     > webgrabber -s http://10.10.10.10:8080 -f <feroxbusterfile> -e fb"
+
     > webgrabber -s https://10.10.10.10:4443 -f <ffuf csv file> -e ff"
 
 ## lsc
