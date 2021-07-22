@@ -58,7 +58,7 @@ This tool works great in combination with tmux search. Try the following after r
     - Default: "SHIFT+n" then type the word your looking for and press "ENTER". 
 - Copy the URL path you found.
 
-##webgrabber
+## webgrabber
 Dependencies: cutycapt, jq(for ffuf json files), firefox (by default this is the browser configured to open files)
 webgrabber is a wrapper around cutycapt. You MUST have cutycapt installed and in your path for webgrabber to work. 
 The purpose of webgrabber is to quickly iterate though a directory buster output file, go to each url's web interface,
@@ -78,7 +78,7 @@ Use this tool in the following way:
     > webgrabber -s http://10.10.10.10:8080 -f <feroxbusterfile> -e fb"
     > webgrabber -s https://10.10.10.10:4443 -f <ffuf csv file> -e ff"
 
-##lsc
+## lsc
 lsc or "ls cat" will perform a ls, but include file names as a title. 
 The purpose of this binary was I didn't like how `ls *` opened all files but it was hard to delineate between 
 where one file started and one file ended. By default lsc will output all files recursivly in the directory its run from.
@@ -89,7 +89,7 @@ Use this tool in the following way:
 - or if you want to filter use
     > lsc "*.config"
 
-##pulllinks
+## pulllinks
 Dependencies: none
 pulllinks is a quick way to to filter out the HTML for a page to show all links and comments found on a page. 
 The purpose of this script was to copy the HTML source form a specific page, paste into a file (Example: index.html)
@@ -106,7 +106,7 @@ Use this tool in the following way:
     - or to remove filtering
     > pulllinks index.html nofilter
 
-##ldapgatherer
+## ldapgatherer
 Dependences: ldapsearch
 ldapgather will pull a bunch of ldap information from a system using ldapsearch. 
 The purpose of this script was mainly to gather user account "comments" to see if passwords were in there.
