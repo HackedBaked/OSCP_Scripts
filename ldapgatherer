@@ -8,8 +8,8 @@
 
 # Version
 version(){
-    echo "ldapgrabber version 1.2.0"
-    echo "Creation Date: 04/10/2020"
+    echo "ldapgrabber version 1.2.2"
+    echo "Creation Date: 04/10/2021"
     exit 1
 }
 

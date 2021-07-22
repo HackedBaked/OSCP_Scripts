@@ -1,5 +1,5 @@
 #!/bin/bash
-# By: Dave Houser
+# By: Hacked_Baked
 #
 # This tool can ONLY be used with output of the Immunity Debugger ESP hex dump
 # output.
@@ -68,20 +68,24 @@ done
 remove_string='\x'
 
 ##### OUTPUT DISPLAY #####
-echo
-echo "Identified bad chars=\"$2\""
-if [ -z ${diff_vs_iden_array[@]/*$remove_string/} ]; then
-    echo "Chars missing from AllChars & Identifed bad chars= None! :)"
-else
-    echo "Chars missing from AllChars & Identifed bad chars=\"${diff_vs_iden_array[@]/*$remove_string/}\""
+
+if [ !  -z "$2" ]; then
+    echo "User identified bad chars: \"$2\""
+    if [ -z ${diff_vs_iden_array[@]/*$remove_string/} ]; then
+        echo "Chars missing from AllChars & User identifed bad chars: None! :)"
+    else
+        echo "Chars missing from AllChars & User identifed bad chars: \"${diff_vs_iden_array[@]/*$remove_string/}\""
+    fi
 fi
 
 echo "Chars missing from AllChars=\"\x$(join_by '\x' ${diff_array[@]})\""
 echo
 
+
 #Display a count of bytes
 echo "All Chars Length:      ${#chars_array[@]}"
 echo "\"$file\" Chars Length:   ${#file_goodchars_array[@]}"
+echo "Number of bad chars:   "$((${#chars_array[@]}-${#file_goodchars_array[@]}))"    "
 echo 
 echo "\"$file\" Chars:"
 echo ${file_goodchars_array[@]}
