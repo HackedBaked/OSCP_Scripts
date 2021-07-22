@@ -83,6 +83,8 @@ Use this tool in the following way:
     > webgrabber -s https://10.10.10.10:4443 -f <ffuf csv file> -e ff"
 
 ## lsc
+Dependencies: none
+
 lsc or "ls cat" will perform a ls, but include file names as a title. 
 The purpose of this binary was I didn't like how `ls *` opened all files but it was hard to delineate between 
 where one file started and one file ended. By default lsc will output all files recursivly in the directory its run from.
