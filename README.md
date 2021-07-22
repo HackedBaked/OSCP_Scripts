@@ -5,6 +5,7 @@ I will not be maintaining this repo.
 
 ## BadCharChecker
 Dependencies: none
+
 BadCharChecker is used for BOF attacks when using Imunity Debugger on Windows exploits.
 Its purpose is to find bad characters from an ESP dump. To use do the following.
 When you ready to check for bad characters in your stack buffer overflow attack, 
