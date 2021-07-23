@@ -27,7 +27,6 @@ use this tool in the following way:
 - Update your POC code to remove bad chars.
 - Repeat until BadCharChecker finds all Bad chars.
 
-
 ## LEC (Little Endian Converter)
 Dependencies: none
 
@@ -85,7 +84,7 @@ Use this tool in the following way:
 
     > webgrabber -s https://10.10.10.10:4443 -f <ffuf csv file> -e ff"
 
-## lsc
+## lsc (ls cat)
 Dependencies: none
 
 lsc or "ls cat" will perform a ls, but include file names as a title. 
@@ -129,4 +128,22 @@ Use this tool in the following way.
     > ldapgatherer -s 10.10.10.161 -d htb.local"
 - If you want to use creds:
     > ldapgatherer -u 'domain\username' -p 'MyCoolPassword' -s 10.10.10.161 -d htb.local"
-    
+
+## tnas (Tmux Nmap Automation Script)
+Dependences: tmux, nmap
+
+tnas (pronaounced "T","NAS") utilizes tmux window panes to send your most common nmap scripts to seperate panes on the same window.
+tmux offers a way to send commands to seperate windows, however the syntax is long. I made this script to send the 
+most common nmap scans I use to seperate tmux panes. That way I can monitor all of the nmap scans running at once.
+By default tnas has the nmap scans I used built into the end of the script, you will need to adjust accordingly if you want to use different scans.
+Use the tool in the following way.
+- Open at least 4 panes.
+- Perform a "CTRL+B" "Q" to identify each pane's numeric value. 
+- Run tnas against a host ip, and specify which panes to send each command
+    > tnas 10.10.10.10 1,2,4,5
+- You will need to type in the sudo password in each pane
+By default tnas uses these nmap scans:
+    `- sudo nmap -p- -sV -vv -oN _nmap_tcp_quick 10.10.10.10
+    `- sudo nmap -sC -sV -p- -vv -oN _nmap_tcp_full 10.10.10.10
+    `- sudo nmap -sU --top-ports 1000 -oN _nmap_udp_1000 10.10.10.10
+    `- sudo nmap -O --osscan-guess -oN _nmap_os 10.10.10.10
