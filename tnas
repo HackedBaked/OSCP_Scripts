@@ -1,0 +1,144 @@
+#!/bin/bash
+# tnas - Tmux Nmap Automation Script 
+# This script is used to sending nmap scanning commands to existing tmux panes
+
+# Check to make sure host and tmux pane numbers are provided
+if [ -z "$1" ]; then
+    echo "tnas version 1.0.0"
+    echo "[!] ERROR"
+    echo "You must suppy a host ip and specific tmux panes to send commands to"
+    echo "Example:"
+    echo "$ tnas 10.10.10.10 '1,2,5,4'"
+    exit 1
+fi
+
+# Check to make sure tmux pane numbers are provided
+if [ -z "$2" ]; then
+    echo "tnas version 1.0.0"
+    echo "[!] ERROR"
+    echo "You must suppy tmux pane numbers to send scans to"
+    echo "use '{tmux bind} q' to display tmux pane identification numbers"
+    echo "Example:"
+    echo "$ tnas 10.10.10.10 '1,2,5,4'"
+    exit 1
+fi
+
+
+# Check to make sure tmux is installed
+check_dependencies(){
+    # Check if tmux is installed
+    if ! [ -x "$(command -v tmux)" ]; then
+        echo "[!]Error: dependency missing..." >&2
+        echo "tmux must be installed to use this tool!" >&2
+        exit 1
+    # Check if nmap is installed
+    elif ! [ -x "$(command -v nmap)" ]; then
+        echo "[!]Error: dependency missing..." >&2
+        echo "tmux must be installed to use this tool!" >&2
+        exit 1
+    fi
+}
+
+validate_ip() {
+    ipaddress="$1"
+    # check if the ip address format looks right 
+    if ! [[ $ipaddress =~ ^((25[0-5]|2[0-4][0-9]|[01][0-9][0-9]|[0-9]{1,2})[.]){3}(25[0-5]|2[0-4][0-9]|[01][0-9][0-9]|[0-9]{1,2})$ ]]; then
+        echo [!] Error
+        echo "\"$ipaddress\" is not a valid ip address, try again."
+        exit 1
+    else
+        return 
+    fi
+}
+
+validate_panes() {
+    input_panes="$2"
+    # Create array for input selection panes
+    IFS=',' read -r -a input_panes_array <<< "$input_panes"
+    
+    # If "0" was a value, set "zero_exists" to true
+    for i in "${input_panes_array[@]}"; do
+        if [[ $i == 0 ]]; then
+            zero_exists=true
+        fi
+    done
+
+    # Remove all zero padding if there is any
+    shopt -s extglob; input_panes_array=( "${input_panes_array[@]##+(0)}" )
+
+    # remove duplicate values
+    input_panes_array_clean=($(printf "%s\n" "${input_panes_array[@]}" | sort -u | tr '\n' ' '))
+
+    echo "Input panes: ${input_panes_array_clean[@]}"
+
+    # Create array for actual panes
+    actual_panes="$(tmux list-panes | awk -F ':' '{ print$1 }' )"
+    actual_panes_flat=$(echo $actual_panes)
+    IFS=' ' read -r -a actual_panes_array <<< $actual_panes_flat
+    echo "Actual panes: ${actual_panes_array[@]}"
+
+    # Check values for input
+    for i in "${input_panes_array_clean[@]}"; do
+        # Check if all values are integers
+        if ! [[ $i =~ ^[0-9]+$ ]];then 
+            echo "[!] Error"
+            echo "\"$i\" is a non postive integer value. Tmux pane selection must be integers."
+            exit 1
+        fi
+        # Check if values are existing panes
+        if [[ $i -gt ${actual_panes_array[-1]} ]]; then
+            echo "[!] Error"
+            echo "\"$i\" is not an existing tmux pane in your window"
+            echo "Must be a value between 0-${actual_panes_array[-1]}"
+            exit 1
+        fi   
+    done
+
+    # After all checks if 0 existed in orginal re-add to array.
+    if [[ $zero_exists = true ]]; then
+        input_panes_array_clean+=("0")
+    fi
+
+
+    echo "Input panes (no zeros): ${input_panes_array_clean[@]}"
+
+    # Check to make sure the number of panes povided == 4
+    if [[ ${#input_panes_array_clean[@]} -ne 4 ]]; then
+        echo "[!] Error"
+        echo "Number of panes must be equal to 4, ${#input_panes_array_clean[@]} provided."
+        exit 1
+    fi
+
+}
+
+# Perform nmap scans in given tmux panes provided from input
+run_nmap_scans(){ 
+
+    #Quick tcp scan
+    tmux send-keys -t ${input_panes_array_clean[0]} C-z "sudo nmap -p- -sV -vv -oN _nmap_tcp_quick $1" Enter &
+    #Full tcp scan
+    tmux send-keys -t ${input_panes_array_clean[1]} C-z "sudo nmap -sC -sV -p- -vv -oN _nmap_tcp_full $1" Enter &
+    #udp top 1000 ports scan
+    tmux send-keys -t ${input_panes_array_clean[2]} C-z "sudo nmap -sU --top-ports 1000 -vv -oN _nmap_udp_1000 $1" Enter &
+    #OS Scan
+    tmux send-keys -t ${input_panes_array_clean[3]} C-z "sudo nmap -O --osscan-guess -vv -oN _nmap_os $1" Enter &  
+}
+
+# Main entry point for script
+main(){
+
+    # Check to make sure tmux is installed
+    check_dependencies
+    # Validate the given IP address
+    validate_ip $1
+    # Validate input panes
+    validate_panes $1 $2
+    # Run scans
+    run_nmap_scans $1 $2
+
+    echo Done.
+
+}
+
+# Main entry point
+main $1 $2

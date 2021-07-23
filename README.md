@@ -3,6 +3,13 @@ The following repo includes scripts I created to assist with automating some tas
 All of my scripts were made in bash.
 I will not be maintaining this repo.
 
+## my_notes/cheat-sheet.md
+This is not a script, but all of my notes I took for the OSCP test. This file is huge. However it includes a lot of good examples for commands.
+Note: there are probably lots of spelling mistakes in this file, sorry ahead of time. 
+use this .md file in the following way:
+
+- Search for a binary or a command, use the examples I share if you like.
+
 ## BadCharChecker
 Dependencies: none
 
